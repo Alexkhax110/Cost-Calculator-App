@@ -1,0 +1,52 @@
+[debug] [2025-06-21T19:17:27.638Z] ----------------------------------------------------------------------
+[debug] [2025-06-21T19:17:27.643Z] Command:       /usr/local/bin/node /usr/local/bin/firebase serve --only hosting
+[debug] [2025-06-21T19:17:27.643Z] CLI Version:   14.8.0
+[debug] [2025-06-21T19:17:27.643Z] Platform:      darwin
+[debug] [2025-06-21T19:17:27.643Z] Node Version:  v22.16.0
+[debug] [2025-06-21T19:17:27.644Z] Time:          Sun Jun 22 2025 00:17:27 GMT+0500 (Pakistan Standard Time)
+[debug] [2025-06-21T19:17:27.644Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-06-21T19:17:27.792Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-06-21T19:17:27.792Z] > authorizing via signed-in user (hire.alilancer@gmail.com)
+[debug] [2025-06-21T19:17:27.792Z] [iam] checking project cost-calculator-eff80 for permissions ["firebase.projects.get"]
+[debug] [2025-06-21T19:17:27.792Z] Checked if tokens are valid: false, expires at: 1750534276990
+[debug] [2025-06-21T19:17:27.792Z] Checked if tokens are valid: false, expires at: 1750534276990
+[debug] [2025-06-21T19:17:27.792Z] > refreshing access token with scopes: []
+[debug] [2025-06-21T19:17:27.793Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-06-21T19:17:27.793Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-06-21T19:17:28.207Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-06-21T19:17:28.207Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-06-21T19:17:28.227Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/cost-calculator-eff80:testIamPermissions [none]
+[debug] [2025-06-21T19:17:28.227Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/cost-calculator-eff80:testIamPermissions x-goog-quota-user=projects/cost-calculator-eff80
+[debug] [2025-06-21T19:17:28.227Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/cost-calculator-eff80:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-06-21T19:17:29.868Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/cost-calculator-eff80:testIamPermissions 200
+[debug] [2025-06-21T19:17:29.868Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/cost-calculator-eff80:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-06-21T19:17:29.869Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:29.869Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:29.869Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cost-calculator-eff80/services/cloudresourcemanager.googleapis.com [none]
+[debug] [2025-06-21T19:17:29.869Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cost-calculator-eff80/services/cloudresourcemanager.googleapis.com x-goog-quota-user=projects/cost-calculator-eff80
+[debug] [2025-06-21T19:17:31.675Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cost-calculator-eff80/services/cloudresourcemanager.googleapis.com 200
+[debug] [2025-06-21T19:17:31.675Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cost-calculator-eff80/services/cloudresourcemanager.googleapis.com [omitted]
+[debug] [2025-06-21T19:17:31.683Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:31.684Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:31.684Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/cost-calculator-eff80 [none]
+[debug] [2025-06-21T19:17:32.013Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/cost-calculator-eff80 200
+[debug] [2025-06-21T19:17:32.013Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/cost-calculator-eff80 {"projectNumber":"639177859206","projectId":"cost-calculator-eff80","lifecycleState":"ACTIVE","name":"Cost Calculator","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-06-21T18:02:15.576320Z"}
+[debug] [2025-06-21T19:17:32.016Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:32.016Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:32.016Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/cost-calculator-eff80/sites 
+[debug] [2025-06-21T19:17:34.178Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/cost-calculator-eff80/sites 200
+[debug] [2025-06-21T19:17:34.179Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/cost-calculator-eff80/sites {"sites":[{"name":"projects/cost-calculator-eff80/sites/cost-calculator-eff80","defaultUrl":"https://cost-calculator-eff80.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2025-06-21T19:17:34.179Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:34.179Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:34.179Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/cost-calculator-eff80/webApps/-/config [none]
+[debug] [2025-06-21T19:17:35.095Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/cost-calculator-eff80/webApps/-/config 200
+[debug] [2025-06-21T19:17:35.095Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/cost-calculator-eff80/webApps/-/config {"projectId":"cost-calculator-eff80","appId":"1:639177859206:web:f19b2f8f70d59db0ae3107","storageBucket":"cost-calculator-eff80.firebasestorage.app","apiKey":"AIzaSyAj_NPZ94TqfPCZNLRFKeLLbHW38WSBPQ8","authDomain":"cost-calculator-eff80.firebaseapp.com","messagingSenderId":"639177859206"}
+[debug] [2025-06-21T19:17:35.107Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:35.108Z] Checked if tokens are valid: true, expires at: 1750537047207
+[debug] [2025-06-21T19:17:35.108Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/cost-calculator-eff80 [none]
+[debug] [2025-06-21T19:17:35.479Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/cost-calculator-eff80 200
+[debug] [2025-06-21T19:17:35.479Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/cost-calculator-eff80 {"projectId":"cost-calculator-eff80","projectNumber":"639177859206","displayName":"Cost Calculator","name":"projects/cost-calculator-eff80","resources":{"hostingSite":"cost-calculator-eff80"},"state":"ACTIVE","etag":"1_854b4d4e-2a92-4c4d-a27d-ac63604c5104"}
+[info] i  hosting[cost-calculator-eff80]: Serving hosting files from: build {"metadata":{"emulator":{"name":"hosting"},"message":"Serving hosting files from: \u001b[1mbuild\u001b[22m"}}
+[info] ✔  hosting[cost-calculator-eff80]: Local server: http://localhost:5002 {"metadata":{"emulator":{"name":"hosting"},"message":"Local server: \u001b[4m\u001b[1mhttp://localhost:5002\u001b[22m\u001b[24m"}}
+[info] i  hosting: ::1 - - [21/Jun/2025:19:17:48 +0000] "GET / HTTP/1.1" 404 139 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"::1 - - [21/Jun/2025:19:17:48 +0000] \"GET / HTTP/1.1\" 404 139 \"-\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36\""}}

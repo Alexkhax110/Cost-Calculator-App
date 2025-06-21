@@ -8,7 +8,6 @@ import {
   Copy,
   Calculator,
   Palette,
-  Mail,
   Layers,
   Type,
   ToggleLeft,
@@ -41,18 +40,6 @@ const PublicCalculatorView = ({ calculatorData }) => {
         primaryColor: '#6366F1',
         companyName: 'Your Company'
     };
-    
-    // Dynamically load html2canvas script
-    useEffect(() => {
-        const scriptId = 'html2canvas-script';
-        if (!document.getElementById(scriptId)) {
-            const script = document.createElement('script');
-            script.id = scriptId;
-            script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-            script.async = true;
-            document.body.appendChild(script);
-        }
-    }, []);
 
     const handleUpdateElement = (id, key, value) => {
         const update = (elements) => {
@@ -257,8 +244,8 @@ const PublicCalculatorView = ({ calculatorData }) => {
           <div className={`flex-1 p-4 sm:p-8 overflow-y-auto`}>
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden max-w-4xl mx-auto">
               <div className="p-8">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">{calculator.name}</h1>
-                <p className="text-gray-500">{calculator.description}</p>
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">{calculatorData.name}</h1>
+                <p className="text-gray-500">{calculatorData.description}</p>
               </div>
               <div className="p-8 border-t border-gray-100">
                 {pages.length > 1 && (<div className="mb-6"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-gray-500">Step {currentPage + 1} of {pages.length}</span></div><div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-indigo-600 h-2 rounded-full" style={{ width: `${((currentPage + 1) / pages.length) * 100}%` }}></div></div></div>)}
@@ -310,15 +297,19 @@ const PublicCalculatorView = ({ calculatorData }) => {
     );
 }
 
+
 // Main Application Component
-const CostCalculatorApp = () => {
+const App = () => {
   // #region STATE MANAGEMENT
+  const [appMode, setAppMode] = useState('loading'); // loading, admin, public
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // This state will hold the elements for whatever form is active (builder or public view)
   const [formElements, setFormElements] = useState([]);
+  
   const [selectedElement, setSelectedElement] = useState(null);
   const [draggedElement, setDraggedElement] = useState(null);
   const [dropTarget, setDropTarget] = useState(null); 
-  const [previewMode, setPreviewMode] = useState('desktop');
   const [currentPage, setCurrentPage] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -329,7 +320,9 @@ const CostCalculatorApp = () => {
   const [calculatorName, setCalculatorName] = useState('');
   const [calculatorDescription, setCalculatorDescription] = useState('');
   const jpgExportRef = useRef(null);
-  const [publicCalculator, setPublicCalculator] = useState(null);
+  
+  // This will hold the data for the public-facing calculator
+  const [publicCalculatorData, setPublicCalculatorData] = useState(null); 
 
   // Dynamically load html2canvas script
   useEffect(() => {
@@ -348,7 +341,7 @@ const CostCalculatorApp = () => {
         const localData = window.localStorage.getItem('cost-calculators');
         return localData ? JSON.parse(localData) : [
             {
-              id: 1, name: 'Website Development Calculator', description: 'Calculate costs for web development projects.',
+              id: 1, name: 'Website Development Calculator', description: 'Calculate costs for web development projects.', brandSettings: { companyName: 'DesignValley LTD', primaryColor: '#6366F1' },
               elements: [
                 { id: 1625100000001, type: 'select', label: 'Type of Website', options: [{label: 'Brochure', value: 'brochure', cost: 500}, {label: 'E-commerce', value: 'e-commerce', cost: 2000}], value: 'brochure' },
                 { id: 1625100000002, type: 'number', label: 'Number of Pages', value: 5, cost: 150 },
@@ -376,13 +369,18 @@ const CostCalculatorApp = () => {
   useEffect(() => {
       const path = window.location.pathname;
       if (path.startsWith('/calc/')) {
-          const calcId = parseInt(path.split('/calc/')[1]);
+          const calcId = parseInt(path.split('/calc/')[1], 10);
           const localData = window.localStorage.getItem('cost-calculators');
           const calculators = localData ? JSON.parse(localData) : [];
-          const calculator = calculators.find(c => c.id === calcId);
-          if (calculator) {
-              setPublicCalculator(calculator);
+          const calculatorToDisplay = calculators.find(c => c.id === calcId);
+          if (calculatorToDisplay) {
+              setPublicCalculatorData(calculatorToDisplay);
+              setAppMode('public');
+          } else {
+              setAppMode('admin'); // Fallback to admin if calculator not found
           }
+      } else {
+        setAppMode('admin');
       }
   }, []);
 
@@ -588,11 +586,22 @@ const CostCalculatorApp = () => {
       name: calculatorName, description: calculatorDescription, elements: formElements,
       createdAt: new Date().toISOString().split('T')[0],
       submissions: currentCalculatorId ? savedCalculators.find(c => c.id === currentCalculatorId)?.submissions || 0 : 0,
-      status: 'Draft',
+      status: 'Published',
+      brandSettings: brandSettings
     };
-    if (currentCalculatorId) setSavedCalculators(prev => prev.map(c => c.id === currentCalculatorId ? newCalculator : c));
-    else setSavedCalculators(prev => [...prev, newCalculator]);
-    setShowSaveModal(false); setActiveTab('dashboard');
+    
+    setSavedCalculators(prev => {
+        const existingIndex = prev.findIndex(c => c.id === newId);
+        if(existingIndex > -1) {
+            const updated = [...prev];
+            updated[existingIndex] = newCalculator;
+            return updated;
+        }
+        return [...prev, newCalculator];
+    });
+
+    setShowSaveModal(false); 
+    setActiveTab('dashboard');
   };
   
   const loadCalculator = (calculator) => {
@@ -748,7 +757,7 @@ const CostCalculatorApp = () => {
   const ImageDropdown = ({ element, update }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const selectedOption = element.options.find(o => o.value === element.value);
+    const selectedOption = element.options.find(opt => opt.value === element.value);
 
     useEffect(() => {
         const handleClickOutside = (event) => { if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setIsOpen(false); };
@@ -906,7 +915,7 @@ const CostCalculatorApp = () => {
   
   const renderPreviewUI = () => (
     <div className="flex flex-col md:flex-row h-full bg-slate-50 font-sans">
-      <div className={`flex-1 p-4 sm:p-8 overflow-y-auto transition-all duration-300 ${previewMode === 'mobile' ? 'max-w-md mx-auto' : 'w-full'}`}>
+      <div className={`flex-1 p-4 sm:p-8 overflow-y-auto transition-all`}>
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="p-8">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">{calculatorName || 'Cost Calculator'}</h1>
@@ -962,8 +971,16 @@ const CostCalculatorApp = () => {
   // #endregion
 
   // This is the main router for the app
-  if (publicCalculator) {
-      return <PublicCalculatorView calculator={publicCalculator} brandSettings={brandSettings} />;
+  if (appMode === 'loading') {
+      return <div className="flex items-center justify-center h-screen"><p>Loading...</p></div>
+  }
+
+  if (appMode === 'public') {
+      if(publicCalculatorData) {
+        return <PublicCalculatorView calculator={publicCalculatorData} brandSettings={brandSettings} />;
+      } else {
+        return <div className="flex items-center justify-center h-screen"><p>Calculator not found.</p></div>
+      }
   }
 
   return (
@@ -979,11 +996,11 @@ const CostCalculatorApp = () => {
         </div>
         {/* Modals */}
         {showSaveModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Save Calculator</h3><div className="space-y-3"><input type="text" placeholder="Calculator Name" className="w-full p-2 border rounded-md" value={calculatorName} onChange={e => setCalculatorName(e.target.value)} /><textarea placeholder="Description (optional)" className="w-full p-2 border rounded-md h-20" value={calculatorDescription} onChange={e => setCalculatorDescription(e.target.value)}></textarea></div><div className="mt-4 flex gap-2"><button onClick={() => setShowSaveModal(false)} className="flex-1 p-2 bg-gray-200 rounded-md">Cancel</button><button onClick={saveCalculator} className="flex-1 p-2 bg-indigo-600 text-white rounded-md">Save</button></div></div></div>}
-        {showShareLinkModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Share Link for "{showShareLinkModal.name}"</h3><div className="flex gap-2"><input type="text" readOnly value={`http://cost-calculator-app.vercel.app/calc/${showShareLinkModal.id}`} className="flex-1 p-2 border rounded-md bg-gray-100" /><button onClick={() => copyToClipboard(`http://cost-calculator-app.vercel.app/calc/${showShareLinkModal.id}`)} className="p-2 bg-indigo-600 text-white rounded-md"><Copy/></button></div><button onClick={() => setShowShareLinkModal(null)} className="w-full mt-4 p-2 bg-gray-200 rounded-md">Close</button></div></div>}
+        {showShareLinkModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Share Link for "{showShareLinkModal.name}"</h3><div className="flex gap-2"><input type="text" readOnly value={`${window.location.origin}/calc/${showShareLinkModal.id}`} className="flex-1 p-2 border rounded-md bg-gray-100" /><button onClick={() => copyToClipboard(`${window.location.origin}/calc/${showShareLinkModal.id}`)} className="p-2 bg-indigo-600 text-white rounded-md"><Copy/></button></div><button onClick={() => setShowShareLinkModal(null)} className="w-full mt-4 p-2 bg-gray-200 rounded-md">Close</button></div></div>}
         {showBrandSettings && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Brand Settings</h3><div className="space-y-4"><input type="text" placeholder="Company Name" className="w-full p-2 border rounded" value={brandSettings.companyName} onChange={e=>setBrandSettings(p=>({...p, companyName:e.target.value}))}/><div><label className="text-sm font-medium">Company Logo</label><input type="file" accept="image/*" onChange={(e) => {const file = e.target.files[0]; if(file){const r=new FileReader();r.onload=(ev)=>setBrandSettings(p=>({...p, companyLogo:ev.target.result}));r.readAsDataURL(file)}}} className="w-full mt-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/></div><div className="flex gap-4 items-center"><label>Primary Color</label><input type="color" value={brandSettings.primaryColor} onChange={e=>setBrandSettings(p=>({...p, primaryColor:e.target.value}))} className="w-10 h-10"/></div><div className="flex gap-4 items-center"><label>Secondary Color</label><input type="color" value={brandSettings.secondaryColor} onChange={e=>setBrandSettings(p=>({...p, secondaryColor:e.target.value}))} className="w-10 h-10"/></div></div><button onClick={() => setShowBrandSettings(false)} className="w-full mt-6 p-2 bg-indigo-600 text-white rounded-md">Done</button></div></div>}
 
     </div>
   );
 };
 
-export default CostCalculatorApp;
+export default App;
