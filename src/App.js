@@ -541,14 +541,14 @@ const CostCalculatorApp = () => {
   };
   
   const generateJPG = () => {
-    if (typeof html2canvas === 'undefined') {
+    if (typeof window.html2canvas === 'undefined') {
         alert('JPG generation library is not loaded. Please wait a moment and try again.');
         return;
     }
 
     const summaryNode = jpgExportRef.current;
     if (summaryNode) {
-        html2canvas(summaryNode, { 
+        window.html2canvas(summaryNode, { 
             useCORS: true, 
             backgroundColor: '#ffffff',
             scale: 2 // Improve resolution
