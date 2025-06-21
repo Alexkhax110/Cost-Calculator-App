@@ -210,7 +210,6 @@ const PublicCalculatorView = ({ calculator, brandSettings }) => {
 
     // This is a simplified renderer for the public view
     const renderPublicFormElement = (element) => {
-      // Simplified version of the main renderer
       const baseClasses = "w-full p-3 rounded-lg border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all";
       const update = (key, value) => handleUpdateElement(element.id, key, value);
       const Label = () => <label className="block text-sm font-medium text-gray-700 mb-1">{element.label}{element.required && <span className="text-red-500 ml-1">*</span>}</label>;
@@ -218,7 +217,19 @@ const PublicCalculatorView = ({ calculator, brandSettings }) => {
       switch (element.type) {
         case 'text': return <div><Label /><input type="text" className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)} /></div>;
         case 'number': return <div><Label /><input type="number" className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)} /></div>;
-        case 'select': return <div><Label /><select className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)}><option value="">Select...</option>{element.options.map((o, i) => <option key={i} value={o.value}>{o.label} {o.cost > 0 && `(+$${o.cost.toFixed(2)})`}</option>)}</select></div>;
+        case 'select':
+            return (
+                <div>
+                    <Label />
+                    <select className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)}>
+                        <option value="">Select...</option>
+                        {element.options.map((opt, i) => {
+                            const priceString = opt.cost > 0 ? ` (+$${opt.cost.toFixed(2)})` : '';
+                            return <option key={i} value={opt.value}>{opt.label}{priceString}</option>;
+                        })}
+                    </select>
+                </div>
+            );
         case 'slider': return <div><Label>{element.label}: {element.value || element.min}</Label><div className="flex items-center gap-4"><span className="text-xs">{element.min}</span><input type="range" min={element.min} max={element.max} step={element.step} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb" value={element.value || element.min} onChange={(e) => update('value', e.target.value)} /><span className="text-xs">{element.max}</span></div></div>;
         default: return null;
       }
@@ -716,7 +727,7 @@ const CostCalculatorApp = () => {
                 {selectedOption ? (<div className="flex items-center gap-2">{selectedOption.imageUrl ? <img src={selectedOption.imageUrl} alt={selectedOption.label} className="w-8 h-8 object-cover rounded"/> : <ImageIcon className="w-8 h-8 text-gray-400"/>}<span>{selectedOption.label}</span></div>) : <span>Select...</span>}
                 <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
-            {isOpen && (<div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">{element.options.map((opt, i) => (<div key={i} onClick={() => { update('value', opt.value); setIsOpen(false); }} className="flex items-center gap-3 p-2 hover:bg-gray-100 cursor-pointer">{opt.imageUrl ? <img src={opt.imageUrl} alt={opt.label} className="w-10 h-10 object-cover rounded"/> : <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-400"/></div>}<span>{opt.label} {opt.cost > 0 && `(+$${o.cost.toFixed(2)})`}</span></div>))}</div>)}
+            {isOpen && (<div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">{element.options.map((opt, i) => (<div key={i} onClick={() => { update('value', opt.value); setIsOpen(false); }} className="flex items-center gap-3 p-2 hover:bg-gray-100 cursor-pointer">{opt.imageUrl ? <img src={opt.imageUrl} alt={opt.label} className="w-10 h-10 object-cover rounded"/> : <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-400"/></div>}<span>{opt.label} {opt.cost > 0 && `(+$${opt.cost.toFixed(2)})`}</span></div>))}</div>)}
         </div>
     )
   }
@@ -745,8 +756,8 @@ const CostCalculatorApp = () => {
       case 'html': content = <div dangerouslySetInnerHTML={{ __html: element.htmlContent }} />; break;
       case 'divider': content = <hr className="my-4" />; break;
       case 'section': content = <div className="p-4 bg-gray-100 rounded-lg"><h3 className="font-semibold text-lg">{element.label}</h3></div>; break;
-      case 'select': content = <div><Label /><select className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)}><option value="">Select...</option>{element.options.map((o, i) => <option key={i} value={o.value}>{o.label} {o.cost > 0 && `(+$${o.cost.toFixed(2)})`}</option>)}</select></div>; break;
-      case 'radio': content = <div><Label />{element.options.map((o, i) => <div key={i} className="flex items-center gap-2 mb-1"><input type="radio" id={`rb-${element.id}-${i}`} name={`radio-${element.id}`} value={o.value} checked={element.value === o.value} onChange={(e) => update('value', e.target.value)} className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500" /><label htmlFor={`rb-${element.id}-${i}`} className="text-sm text-gray-700">{o.label} {o.cost > 0 && `(+$${o.cost.toFixed(2)})`}</label></div>)}</div>; break;
+      case 'select': content = <div><Label /><select className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)}><option value="">Select...</option>{element.options.map((opt, i) => <option key={i} value={opt.value}>{opt.label} {opt.cost > 0 && `(+$${opt.cost.toFixed(2)})`}</option>)}</select></div>; break;
+      case 'radio': content = <div><Label />{element.options.map((opt, i) => <div key={i} className="flex items-center gap-2 mb-1"><input type="radio" id={`rb-${element.id}-${i}`} name={`radio-${element.id}`} value={opt.value} checked={element.value === opt.value} onChange={(e) => update('value', e.target.value)} className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500" /><label htmlFor={`rb-${element.id}-${i}`} className="text-sm text-gray-700">{opt.label} {opt.cost > 0 && `(+$${opt.cost.toFixed(2)})`}</label></div>)}</div>; break;
       case 'slider': content = <div><Label>{element.label}: {element.value || element.min}</Label><div className="flex items-center gap-4"><span className="text-xs">{element.min}</span><input type="range" min={element.min} max={element.max} step={element.step} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb" value={element.value || element.min} onChange={(e) => update('value', e.target.value)} /><span className="text-xs">{element.max}</span></div></div>; break;
       case 'image-select': content = <div><Label/><ImageDropdown element={element} update={update}/></div>; break;
       case 'group': content = (<div onDragOver={(e) => handleDragOver(e, element.id)} onDrop={(e) => handleDrop(e, element.id)} className={`p-4 border-2 rounded-lg min-h-[100px] ${dropTarget === element.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 border-dashed'}`}><h3 className="font-semibold mb-2">{element.label}</h3>{element.children && element.children.length > 0 ? element.children.map(child => renderFormElement(child, isPreview, element.id)) : <p className="text-xs text-gray-400 text-center">Drag elements here</p>}</div>); break;
