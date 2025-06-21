@@ -31,6 +31,147 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
+// This component is for the public-facing calculator page.
+const PublicCalculatorView = ({ calculator }) => {
+    const [formElements, setFormElements] = useState(calculator.elements || []);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalCost, setTotalCost] = useState(0);
+    const jpgExportRef = useRef(null);
+    const brandSettings = calculator.brandSettings || {
+        primaryColor: '#6366F1',
+        companyName: 'Your Company'
+    };
+
+    const handleUpdateElement = (id, key, value) => {
+        const update = (elements) => {
+            return elements.map(el => {
+                if (el.id === id) return { ...el, [key]: value };
+                if (el.children) return { ...el, children: update(el.children) };
+                return el;
+            });
+        };
+        setFormElements(prev => update(prev));
+    };
+    
+    const calculateTotal = () => {
+        let total = 0;
+        const calculate = (elements) => {
+            elements.forEach(el => {
+                if (el.type === 'number' && el.value) total += parseFloat(el.value) * (el.cost || 0);
+                else if (['select', 'radio', 'image-select'].includes(el.type) && el.value) {
+                    const option = el.options.find(opt => opt.value === el.value);
+                    if (option) total += option.cost || 0;
+                } else if (el.type === 'slider' && el.value) {
+                     total += parseFloat(el.value) * (el.cost || 0);
+                }
+                if(el.children) calculate(el.children);
+            });
+        }
+        calculate(formElements);
+        setTotalCost(total);
+    };
+
+    useEffect(() => {
+        calculateTotal();
+    }, [formElements]);
+
+    const pages = formElements.reduce((acc, element) => {
+        if (element.type === 'pagebreak') acc.push([]);
+        else if (acc.length === 0) acc.push([element]);
+        else acc[acc.length - 1].push(element);
+        return acc;
+    }, []);
+    if (pages.length === 0 && formElements.length > 0) pages.push(formElements);
+    else if(pages.length === 0) pages.push([]);
+
+    const getSummaryItems = () => {
+      let items = [];
+      const collectItems = (elements) => {
+          elements.forEach(element => {
+              let item = null;
+              const baseItem = { type: element.type, label: element.label, value: element.value };
+              if (element.type === 'number' && element.value) {
+                item = { ...baseItem, qty: element.value, rate: element.cost || 0, amount: parseFloat(element.value) * (element.cost || 0) };
+              } else if (['select', 'radio', 'image-select'].includes(element.type) && element.value) {
+                const option = element.options.find(opt => opt.value === element.value);
+                if (option) item = { ...baseItem, description: option.label, qty: 1, rate: option.cost || 0, amount: option.cost || 0 };
+              } else if ((element.type === 'text' || element.type === 'validated-input') && element.value) {
+                  item = { ...baseItem, description: element.value, qty: 1, rate: 0, amount: 0 };
+              }
+              if(item) items.push(item);
+              if(element.children) collectItems(element.children);
+          });
+      }
+      collectItems(formElements);
+      return items;
+    };
+
+    // This is a simplified renderer for the public view
+    const renderPublicFormElement = (element) => {
+      // Simplified version of the main renderer
+      const baseClasses = "w-full p-3 rounded-lg border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all";
+      const update = (key, value) => handleUpdateElement(element.id, key, value);
+      const Label = () => <label className="block text-sm font-medium text-gray-700 mb-1">{element.label}{element.required && <span className="text-red-500 ml-1">*</span>}</label>;
+      
+      switch (element.type) {
+        case 'text': return <div><Label /><input type="text" className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)} /></div>;
+        case 'number': return <div><Label /><input type="number" className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)} /></div>;
+        case 'select': return <div><Label /><select className={baseClasses} value={element.value || ''} onChange={(e) => update('value', e.target.value)}><option value="">Select...</option>{element.options.map((o, i) => <option key={i} value={o.value}>{o.label} {o.cost > 0 && `(+$${o.cost.toFixed(2)})`}</option>)}</select></div>;
+        case 'slider': return <div><Label>{element.label}: {element.value || element.min}</Label><div className="flex items-center gap-4"><span className="text-xs">{element.min}</span><input type="range" min={element.min} max={element.max} step={element.step} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb" value={element.value || element.min} onChange={(e) => update('value', e.target.value)} /><span className="text-xs">{element.max}</span></div></div>;
+        default: return null;
+      }
+    }
+
+    return (
+        <div className="flex flex-col md:flex-row h-screen bg-slate-50 font-sans">
+          <div className={`flex-1 p-4 sm:p-8 overflow-y-auto`}>
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden max-w-4xl mx-auto">
+              <div className="p-8">
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">{calculator.name}</h1>
+                <p className="text-gray-500">{calculator.description}</p>
+              </div>
+              <div className="p-8 border-t border-gray-100">
+                {pages.length > 1 && (<div className="mb-6"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-gray-500">Step {currentPage + 1} of {pages.length}</span></div><div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-indigo-600 h-2 rounded-full" style={{ width: `${((currentPage + 1) / pages.length) * 100}%` }}></div></div></div>)}
+                <div className="space-y-6">{pages[currentPage]?.map(el => renderPublicFormElement(el))}</div>
+                {pages.length > 1 && (<div className="flex justify-between pt-6 mt-6 border-t"><button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg disabled:opacity-50 font-semibold">Previous</button><button onClick={() => setCurrentPage(p => Math.min(pages.length - 1, p + 1))} disabled={currentPage >= pages.length - 1} className="px-6 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50 font-semibold">Next</button></div>)}
+              </div>
+            </div>
+          </div>
+          <div className="w-full md:w-96 flex-shrink-0 p-4 sm:p-8 md:pl-0">
+              <div className="bg-white rounded-2xl shadow-lg h-full flex flex-col">
+                <div ref={jpgExportRef} className="p-6 bg-white rounded-t-2xl">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Summary</h2>
+                    {getSummaryItems().length > 0 ? (
+                      <>
+                        <div className="-mx-6 px-6">
+                            <div className="space-y-3">
+                                {getSummaryItems().map((item, i) => (
+                                    <div key={i} className="flex justify-between items-start py-3 border-b border-slate-100 last:border-b-0 text-sm">
+                                        <div>
+                                            <span className="font-medium text-slate-700">{item.label}</span>
+                                            {item.description && <div className="text-xs text-slate-500">{item.description}</div>}
+                                        </div>
+                                        <span className="text-right font-medium text-slate-700">
+                                           {item.amount > 0 ? `$${item.amount.toFixed(2)}` : (item.value || '')}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="pt-4 border-t-2 border-slate-200 mt-4">
+                          <div className="flex justify-between items-center text-sm font-medium text-slate-500"><span>Subtotal</span><span>${totalCost.toFixed(2)}</span></div>
+                          <div className="flex justify-between items-center text-sm font-medium text-slate-500 mt-2"><span>Tax (0%)</span><span>$0.00</span></div>
+                          <div className="flex justify-between items-center text-lg font-bold text-slate-800 mt-3"><span>Total</span><span>${totalCost.toFixed(2)}</span></div>
+                        </div>
+                      </>
+                    ) : (<div className="text-center py-10 text-gray-500 flex flex-col items-center justify-center h-full"><Calculator className="w-10 h-10 mb-2 text-gray-300" /><span>Your estimate will appear here.</span></div>)}
+                </div>
+              </div>
+          </div>
+        </div>
+    );
+}
+
 // Main Application Component
 const CostCalculatorApp = () => {
   // #region STATE MANAGEMENT
@@ -49,7 +190,8 @@ const CostCalculatorApp = () => {
   const [currentCalculatorId, setCurrentCalculatorId] = useState(null);
   const [calculatorName, setCalculatorName] = useState('');
   const [calculatorDescription, setCalculatorDescription] = useState('');
-  const jpgExportRef = useRef(null); // Ref for the clean JPG export area
+  const jpgExportRef = useRef(null);
+  const [publicCalculator, setPublicCalculator] = useState(null);
 
   // Dynamically load html2canvas script
   useEffect(() => {
@@ -72,9 +214,21 @@ const CostCalculatorApp = () => {
         { id: 1625100000001, type: 'select', label: 'Type of Website', options: [{label: 'Brochure', value: 'brochure', cost: 500}, {label: 'E-commerce', value: 'e-commerce', cost: 2000}], value: 'brochure' },
         { id: 1625100000002, type: 'number', label: 'Number of Pages', value: 5, cost: 150 },
       ],
-      createdAt: '2025-06-21', submissions: 45, status: 'Published', shareLink: 'https://calc.app/web-dev'
+      createdAt: '2025-06-21', submissions: 45, status: 'Published'
     },
   ]);
+  
+  // Routing logic
+  useEffect(() => {
+      const path = window.location.pathname;
+      if (path.startsWith('/calc/')) {
+          const calcId = parseInt(path.split('/calc/')[1]);
+          const calculator = savedCalculators.find(c => c.id === calcId);
+          if (calculator) {
+              setPublicCalculator(calculator);
+          }
+      }
+  }, [savedCalculators]);
 
   const [brandSettings, setBrandSettings] = useState({
     companyLogo: null,
@@ -272,12 +426,13 @@ const CostCalculatorApp = () => {
   
   const saveCalculator = () => {
     if (!calculatorName.trim()) { alert('Please enter a calculator name.'); return; }
+    const newId = currentCalculatorId || Date.now();
     const newCalculator = {
-      id: currentCalculatorId || Date.now(),
+      id: newId,
       name: calculatorName, description: calculatorDescription, elements: formElements,
       createdAt: new Date().toISOString().split('T')[0],
       submissions: currentCalculatorId ? savedCalculators.find(c => c.id === currentCalculatorId)?.submissions || 0 : 0,
-      status: 'Draft', shareLink: `https://calc.app/${calculatorName.toLowerCase().replace(/\s+/g, '-')}`
+      status: 'Draft',
     };
     if (currentCalculatorId) setSavedCalculators(prev => prev.map(c => c.id === currentCalculatorId ? newCalculator : c));
     else setSavedCalculators(prev => [...prev, newCalculator]);
@@ -631,6 +786,11 @@ const CostCalculatorApp = () => {
   
   // #endregion
 
+  // This is the main router for the app
+  if (publicCalculator) {
+      return <PublicCalculatorView calculator={publicCalculator} />;
+  }
+
   return (
     <div className="h-screen bg-gray-100 font-sans flex text-gray-900 overflow-hidden">
         <div className="w-16 sm:w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-4 flex-shrink-0">
@@ -644,7 +804,7 @@ const CostCalculatorApp = () => {
         </div>
         {/* Modals */}
         {showSaveModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Save Calculator</h3><div className="space-y-3"><input type="text" placeholder="Calculator Name" className="w-full p-2 border rounded-md" value={calculatorName} onChange={e => setCalculatorName(e.target.value)} /><textarea placeholder="Description (optional)" className="w-full p-2 border rounded-md h-20" value={calculatorDescription} onChange={e => setCalculatorDescription(e.target.value)}></textarea></div><div className="mt-4 flex gap-2"><button onClick={() => setShowSaveModal(false)} className="flex-1 p-2 bg-gray-200 rounded-md">Cancel</button><button onClick={saveCalculator} className="flex-1 p-2 bg-indigo-600 text-white rounded-md">Save</button></div></div></div>}
-        {showShareLinkModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Share Link for "{showShareLinkModal.name}"</h3><div className="flex gap-2"><input type="text" readOnly value={showShareLinkModal.shareLink} className="flex-1 p-2 border rounded-md bg-gray-100" /><button onClick={() => {navigator.clipboard.writeText(showShareLinkModal.shareLink).then(() => alert('Link copied!'))}} className="p-2 bg-indigo-600 text-white rounded-md"><Copy/></button></div><button onClick={() => setShowShareLinkModal(null)} className="w-full mt-4 p-2 bg-gray-200 rounded-md">Close</button></div></div>}
+        {showShareLinkModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Share Link for "{showShareLinkModal.name}"</h3><div className="flex gap-2"><input type="text" readOnly value={`${window.location.origin}/calc/${showShareLinkModal.id}`} className="flex-1 p-2 border rounded-md bg-gray-100" /><button onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/calc/${showShareLinkModal.id}`).then(() => alert('Link copied!'))}} className="p-2 bg-indigo-600 text-white rounded-md"><Copy/></button></div><button onClick={() => setShowShareLinkModal(null)} className="w-full mt-4 p-2 bg-gray-200 rounded-md">Close</button></div></div>}
         {showBrandSettings && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Brand Settings</h3><div className="space-y-4"><input type="text" placeholder="Company Name" className="w-full p-2 border rounded" value={brandSettings.companyName} onChange={e=>setBrandSettings(p=>({...p, companyName:e.target.value}))}/><div><label className="text-sm font-medium">Company Logo</label><input type="file" accept="image/*" onChange={(e) => {const file = e.target.files[0]; if(file){const r=new FileReader();r.onload=(ev)=>setBrandSettings(p=>({...p, companyLogo:ev.target.result}));r.readAsDataURL(file)}}} className="w-full mt-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/></div><div className="flex gap-4 items-center"><label>Primary Color</label><input type="color" value={brandSettings.primaryColor} onChange={e=>setBrandSettings(p=>({...p, primaryColor:e.target.value}))} className="w-10 h-10"/></div><div className="flex gap-4 items-center"><label>Secondary Color</label><input type="color" value={brandSettings.secondaryColor} onChange={e=>setBrandSettings(p=>({...p, secondaryColor:e.target.value}))} className="w-10 h-10"/></div></div><button onClick={() => setShowBrandSettings(false)} className="w-full mt-6 p-2 bg-indigo-600 text-white rounded-md">Done</button></div></div>}
 
     </div>
