@@ -591,7 +591,7 @@ const CostCalculatorApp = () => {
       </div>
       <div className="w-full md:w-96 flex-shrink-0 p-4 sm:p-8 md:pl-0">
           <div className="bg-white rounded-2xl shadow-lg h-full flex flex-col">
-            <div ref={jpgExportRef} className="p-6">
+            <div ref={jpgExportRef} className="p-6 bg-white rounded-t-2xl">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Summary</h2>
                 {getSummaryItems().length > 0 ? (
                   <>
