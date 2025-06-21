@@ -41,6 +41,18 @@ const PublicCalculatorView = ({ calculator }) => {
         primaryColor: '#6366F1',
         companyName: 'Your Company'
     };
+    
+    // Dynamically load html2canvas script
+    useEffect(() => {
+        const scriptId = 'html2canvas-script';
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+            script.async = true;
+            document.body.appendChild(script);
+        }
+    }, []);
 
     const handleUpdateElement = (id, key, value) => {
         const update = (elements) => {
@@ -105,6 +117,112 @@ const PublicCalculatorView = ({ calculator }) => {
       collectItems(formElements);
       return items;
     };
+    
+      const generatePDF = () => {
+        const summary = getSummaryItems();
+        const date = new Date();
+        const dueDate = new Date(date);
+        dueDate.setDate(dueDate.getDate() + 15);
+        
+        const pdfContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Estimate - ${brandSettings.companyName}</title>
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+              @page { size: A4; margin: 0; }
+              body { font-family: 'Inter', sans-serif; margin: 0; color: #111827; background-color: #ffffff; -webkit-print-color-adjust: exact; }
+              .page { width: 210mm; min-height: 297mm; padding: 40px; box-sizing: border-box; }
+              .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+              .header-left .logo { height: 30px; width: auto; margin-bottom: 20px; }
+              .header-left h1 { font-size: 16px; font-weight: 600; margin: 0 0 5px 0; }
+              .header-left p { margin: 0; font-size: 14px; color: #6B7280; }
+              .header-right { text-align: right; }
+              .header-right h2 { font-size: 28px; font-weight: 700; margin: 0 0 5px 0; letter-spacing: 0.025em; }
+              .header-right p { margin: 0; font-size: 14px; color: #6B7280; }
+              .details { display: flex; justify-content: space-between; margin-bottom: 40px; }
+              .details .section h3 { font-size: 12px; color: #6B7280; font-weight: 600; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em;}
+              .details .section p { margin: 0; font-size: 14px; font-weight: 500; line-height: 1.6; }
+              .items-table { width: 100%; border-collapse: collapse; }
+              .items-table th { padding: 10px 0; text-align: left; font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; }
+              .items-table td { padding: 15px 0; font-size: 14px; border-bottom: 1px solid #e5e7eb; }
+              .items-table .item-name { font-weight: 600; color: #111827; }
+              .items-table .item-desc { font-size: 13px; color: #6B7280; }
+              .items-table .align-right { text-align: right; }
+              .summary { display: flex; justify-content: flex-end; margin-top: 20px; }
+              .summary-box { width: 280px; }
+              .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+              .summary-row.total { font-weight: 600; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 5px; }
+              .amount-due { background-color: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 8px; padding: 15px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
+              .amount-due span { font-size: 16px; font-weight: 600; }
+              .amount-due .total-price { font-size: 20px; font-weight: 700; color: ${brandSettings.primaryColor}; }
+              .notes { margin-top: 40px; }
+              .notes h3 { font-size: 12px; color: #6B7280; font-weight: 600; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+              .notes p { margin: 0; font-size: 14px; color: #6B7280; }
+            </style>
+          </head>
+          <body>
+            <div class="page">
+              <div class="header">
+                <div class="header-left">
+                  ${brandSettings.companyLogo ? `<img src="${brandSettings.companyLogo}" alt="Logo" class="logo">` : `<h1>${brandSettings.companyName}</h1>`}
+                  <p>Covent Garden, London</p>
+                  <p>ali@designvalley.io</p>
+                </div>
+                <div class="header-right">
+                  <h2>ESTIMATE</h2>
+                  <p>#EST-${Date.now().toString().slice(-4)}</p>
+                </div>
+              </div>
+              <div class="details">
+                <div class="section"><h3>Bill To</h3><p>Your Client's Name</p><p>Client's Address</p><p>client@email.com</p></div>
+                <div class="section" style="text-align: right;"><h3>Estimate Date</h3><p>${date.toLocaleDateString()}</p><h3 style="margin-top: 20px;">Valid Until</h3><p>${dueDate.toLocaleDateString()}</p></div>
+              </div>
+              <table class="items-table">
+                <thead><tr><th>Description</th><th class="align-right">Qty</th><th class="align-right">Rate</th><th class="align-right">Amount</th></tr></thead>
+                <tbody>${summary.map(item => `<tr><td><div class="item-name">${item.label}</div><div class="item-desc">${item.description || ''}</div></td><td class="align-right">${item.qty}</td><td class="align-right">$${item.rate.toFixed(2)}</td><td class="align-right">$${item.amount.toFixed(2)}</td></tr>`).join('')}</tbody>
+              </table>
+              <div class="summary"><div class="summary-box"><div class="summary-row"><span>Subtotal</span><span>$${totalCost.toFixed(2)}</span></div><div class="summary-row"><span>Tax (0%)</span><span>$0.00</span></div><div class="summary-row total"><span>Total</span><span>$${totalCost.toFixed(2)}</span></div><div class="amount-due"><span>Amount Due</span><span class="total-price">$${totalCost.toFixed(2)}</span></div></div></div>
+              <div class="notes"><h3>Notes</h3><p>Thank you for your business! We appreciate your prompt payment.</p></div>
+            </div>
+            <script>window.onload = () => window.print();</script>
+          </body>
+        </html>`;
+        
+        const blob = new Blob([pdfContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      };
+      
+      const generateJPG = () => {
+        if (typeof window.html2canvas === 'undefined') {
+            alert('JPG generation library is not loaded. Please wait a moment and try again.');
+            return;
+        }
+    
+        const summaryNode = jpgExportRef.current;
+        if (summaryNode) {
+            window.html2canvas(summaryNode, { 
+                useCORS: true, 
+                backgroundColor: '#ffffff',
+                scale: 2 
+            }).then(canvas => {
+                const image = canvas.toDataURL('image/jpeg', 0.95);
+                const link = document.createElement('a');
+                link.href = image;
+                link.download = `estimate-${Date.now()}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }).catch(err => {
+                console.error("Error generating JPG:", err);
+                alert("Sorry, there was an error generating the JPG image.");
+            });
+        }
+      };
+
 
     // This is a simplified renderer for the public view
     const renderPublicFormElement = (element) => {
@@ -139,33 +257,41 @@ const PublicCalculatorView = ({ calculator }) => {
           </div>
           <div className="w-full md:w-96 flex-shrink-0 p-4 sm:p-8 md:pl-0">
               <div className="bg-white rounded-2xl shadow-lg h-full flex flex-col">
-                <div ref={jpgExportRef} className="p-6 bg-white rounded-t-2xl">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Summary</h2>
-                    {getSummaryItems().length > 0 ? (
-                      <>
-                        <div className="-mx-6 px-6">
-                            <div className="space-y-3">
-                                {getSummaryItems().map((item, i) => (
-                                    <div key={i} className="flex justify-between items-start py-3 border-b border-slate-100 last:border-b-0 text-sm">
-                                        <div>
-                                            <span className="font-medium text-slate-700">{item.label}</span>
-                                            {item.description && <div className="text-xs text-slate-500">{item.description}</div>}
+                 <div className="p-6 bg-white rounded-t-2xl flex-grow">
+                    <div ref={jpgExportRef}>
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">Summary</h2>
+                        {getSummaryItems().length > 0 ? (
+                        <>
+                            <div className="-mx-6 px-6">
+                                <div className="space-y-3">
+                                    {getSummaryItems().map((item, i) => (
+                                        <div key={i} className="flex justify-between items-start py-3 border-b border-slate-100 last:border-b-0 text-sm">
+                                            <div>
+                                                <span className="font-medium text-slate-700">{item.label}</span>
+                                                {item.description && <div className="text-xs text-slate-500">{item.description}</div>}
+                                            </div>
+                                            <span className="text-right font-medium text-slate-700">
+                                            {item.amount > 0 ? `$${item.amount.toFixed(2)}` : (item.value || '')}
+                                            </span>
                                         </div>
-                                        <span className="text-right font-medium text-slate-700">
-                                           {item.amount > 0 ? `$${item.amount.toFixed(2)}` : (item.value || '')}
-                                        </span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                        <div className="pt-4 border-t-2 border-slate-200 mt-4">
-                          <div className="flex justify-between items-center text-sm font-medium text-slate-500"><span>Subtotal</span><span>${totalCost.toFixed(2)}</span></div>
-                          <div className="flex justify-between items-center text-sm font-medium text-slate-500 mt-2"><span>Tax (0%)</span><span>$0.00</span></div>
-                          <div className="flex justify-between items-center text-lg font-bold text-slate-800 mt-3"><span>Total</span><span>${totalCost.toFixed(2)}</span></div>
-                        </div>
-                      </>
-                    ) : (<div className="text-center py-10 text-gray-500 flex flex-col items-center justify-center h-full"><Calculator className="w-10 h-10 mb-2 text-gray-300" /><span>Your estimate will appear here.</span></div>)}
+                            <div className="pt-4 border-t-2 border-slate-200 mt-4">
+                            <div className="flex justify-between items-center text-sm font-medium text-slate-500"><span>Subtotal</span><span>${totalCost.toFixed(2)}</span></div>
+                            <div className="flex justify-between items-center text-sm font-medium text-slate-500 mt-2"><span>Tax (0%)</span><span>$0.00</span></div>
+                            <div className="flex justify-between items-center text-lg font-bold text-slate-800 mt-3"><span>Total</span><span>${totalCost.toFixed(2)}</span></div>
+                            </div>
+                        </>
+                        ) : (<div className="text-center py-10 text-gray-500 flex flex-col items-center justify-center h-full"><Calculator className="w-10 h-10 mb-2 text-gray-300" /><span>Your estimate will appear here.</span></div>)}
+                    </div>
                 </div>
+                 {getSummaryItems().length > 0 && 
+                <div className="p-6 pt-4 mt-auto border-t border-slate-200 space-y-2">
+                  <button onClick={generatePDF} className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors"><Download className="w-4 h-4"/>Download PDF</button>
+                  <button onClick={generateJPG} className="w-full py-2.5 bg-gray-200 text-gray-800 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-gray-300 transition-colors"><ImageIcon className="w-4 h-4"/>Download JPG</button>
+                </div>
+                }
               </div>
           </div>
         </div>
@@ -566,6 +692,25 @@ const CostCalculatorApp = () => {
         });
     }
   };
+  
+  const copyToClipboard = (text) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      alert('Link copied to clipboard!');
+    } catch (err) {
+      alert('Failed to copy link.');
+      console.error('Fallback: Oops, unable to copy', err);
+    }
+    document.body.removeChild(textArea);
+  };
   // #endregion
 
   // #region RENDER METHODS
@@ -804,7 +949,7 @@ const CostCalculatorApp = () => {
         </div>
         {/* Modals */}
         {showSaveModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Save Calculator</h3><div className="space-y-3"><input type="text" placeholder="Calculator Name" className="w-full p-2 border rounded-md" value={calculatorName} onChange={e => setCalculatorName(e.target.value)} /><textarea placeholder="Description (optional)" className="w-full p-2 border rounded-md h-20" value={calculatorDescription} onChange={e => setCalculatorDescription(e.target.value)}></textarea></div><div className="mt-4 flex gap-2"><button onClick={() => setShowSaveModal(false)} className="flex-1 p-2 bg-gray-200 rounded-md">Cancel</button><button onClick={saveCalculator} className="flex-1 p-2 bg-indigo-600 text-white rounded-md">Save</button></div></div></div>}
-        {showShareLinkModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Share Link for "{showShareLinkModal.name}"</h3><div className="flex gap-2"><input type="text" readOnly value={`${window.location.origin}/calc/${showShareLinkModal.id}`} className="flex-1 p-2 border rounded-md bg-gray-100" /><button onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/calc/${showShareLinkModal.id}`).then(() => alert('Link copied!'))}} className="p-2 bg-indigo-600 text-white rounded-md"><Copy/></button></div><button onClick={() => setShowShareLinkModal(null)} className="w-full mt-4 p-2 bg-gray-200 rounded-md">Close</button></div></div>}
+        {showShareLinkModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Share Link for "{showShareLinkModal.name}"</h3><div className="flex gap-2"><input type="text" readOnly value={`${window.location.origin}/calc/${showShareLinkModal.id}`} className="flex-1 p-2 border rounded-md bg-gray-100" /><button onClick={() => copyToClipboard(`${window.location.origin}/calc/${showShareLinkModal.id}`)} className="p-2 bg-indigo-600 text-white rounded-md"><Copy/></button></div><button onClick={() => setShowShareLinkModal(null)} className="w-full mt-4 p-2 bg-gray-200 rounded-md">Close</button></div></div>}
         {showBrandSettings && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Brand Settings</h3><div className="space-y-4"><input type="text" placeholder="Company Name" className="w-full p-2 border rounded" value={brandSettings.companyName} onChange={e=>setBrandSettings(p=>({...p, companyName:e.target.value}))}/><div><label className="text-sm font-medium">Company Logo</label><input type="file" accept="image/*" onChange={(e) => {const file = e.target.files[0]; if(file){const r=new FileReader();r.onload=(ev)=>setBrandSettings(p=>({...p, companyLogo:ev.target.result}));r.readAsDataURL(file)}}} className="w-full mt-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/></div><div className="flex gap-4 items-center"><label>Primary Color</label><input type="color" value={brandSettings.primaryColor} onChange={e=>setBrandSettings(p=>({...p, primaryColor:e.target.value}))} className="w-10 h-10"/></div><div className="flex gap-4 items-center"><label>Secondary Color</label><input type="color" value={brandSettings.secondaryColor} onChange={e=>setBrandSettings(p=>({...p, secondaryColor:e.target.value}))} className="w-10 h-10"/></div></div><button onClick={() => setShowBrandSettings(false)} className="w-full mt-6 p-2 bg-indigo-600 text-white rounded-md">Done</button></div></div>}
 
     </div>
