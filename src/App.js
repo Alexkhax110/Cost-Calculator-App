@@ -32,27 +32,11 @@ import {
 } from 'lucide-react';
 
 // This component is for the public-facing calculator page.
-const PublicCalculatorView = ({ calculator }) => {
+const PublicCalculatorView = ({ calculator, brandSettings }) => {
     const [formElements, setFormElements] = useState(calculator.elements || []);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalCost, setTotalCost] = useState(0);
     const jpgExportRef = useRef(null);
-    const brandSettings = calculator.brandSettings || {
-        primaryColor: '#6366F1',
-        companyName: 'Your Company'
-    };
-    
-    // Dynamically load html2canvas script
-    useEffect(() => {
-        const scriptId = 'html2canvas-script';
-        if (!document.getElementById(scriptId)) {
-            const script = document.createElement('script');
-            script.id = scriptId;
-            script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-            script.async = true;
-            document.body.appendChild(script);
-        }
-    }, []);
 
     const handleUpdateElement = (id, key, value) => {
         const update = (elements) => {
@@ -732,7 +716,7 @@ const CostCalculatorApp = () => {
                 {selectedOption ? (<div className="flex items-center gap-2">{selectedOption.imageUrl ? <img src={selectedOption.imageUrl} alt={selectedOption.label} className="w-8 h-8 object-cover rounded"/> : <ImageIcon className="w-8 h-8 text-gray-400"/>}<span>{selectedOption.label}</span></div>) : <span>Select...</span>}
                 <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
-            {isOpen && (<div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">{element.options.map((opt, i) => (<div key={i} onClick={() => { update('value', opt.value); setIsOpen(false); }} className="flex items-center gap-3 p-2 hover:bg-gray-100 cursor-pointer">{opt.imageUrl ? <img src={opt.imageUrl} alt={opt.label} className="w-10 h-10 object-cover rounded"/> : <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-400"/></div>}<span>{opt.label} {opt.cost > 0 && `(+$${opt.cost.toFixed(2)})`}</span></div>))}</div>)}
+            {isOpen && (<div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">{element.options.map((opt, i) => (<div key={i} onClick={() => { update('value', opt.value); setIsOpen(false); }} className="flex items-center gap-3 p-2 hover:bg-gray-100 cursor-pointer">{opt.imageUrl ? <img src={opt.imageUrl} alt={opt.label} className="w-10 h-10 object-cover rounded"/> : <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-400"/></div>}<span>{opt.label} {opt.cost > 0 && `(+$${o.cost.toFixed(2)})`}</span></div>))}</div>)}
         </div>
     )
   }
@@ -933,7 +917,7 @@ const CostCalculatorApp = () => {
 
   // This is the main router for the app
   if (publicCalculator) {
-      return <PublicCalculatorView calculator={publicCalculator} />;
+      return <PublicCalculatorView calculator={publicCalculator} brandSettings={brandSettings} />;
   }
 
   return (
@@ -949,7 +933,7 @@ const CostCalculatorApp = () => {
         </div>
         {/* Modals */}
         {showSaveModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Save Calculator</h3><div className="space-y-3"><input type="text" placeholder="Calculator Name" className="w-full p-2 border rounded-md" value={calculatorName} onChange={e => setCalculatorName(e.target.value)} /><textarea placeholder="Description (optional)" className="w-full p-2 border rounded-md h-20" value={calculatorDescription} onChange={e => setCalculatorDescription(e.target.value)}></textarea></div><div className="mt-4 flex gap-2"><button onClick={() => setShowSaveModal(false)} className="flex-1 p-2 bg-gray-200 rounded-md">Cancel</button><button onClick={saveCalculator} className="flex-1 p-2 bg-indigo-600 text-white rounded-md">Save</button></div></div></div>}
-        {showShareLinkModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Share Link for "{showShareLinkModal.name}"</h3><div className="flex gap-2"><input type="text" readOnly value={`${window.location.origin}/calc/${showShareLinkModal.id}`} className="flex-1 p-2 border rounded-md bg-gray-100" /><button onClick={() => copyToClipboard(`${window.location.origin}/calc/${showShareLinkModal.id}`)} className="p-2 bg-indigo-600 text-white rounded-md"><Copy/></button></div><button onClick={() => setShowShareLinkModal(null)} className="w-full mt-4 p-2 bg-gray-200 rounded-md">Close</button></div></div>}
+        {showShareLinkModal && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Share Link for "{showShareLinkModal.name}"</h3><div className="flex gap-2"><input type="text" readOnly value={`http://cost-calculator-app.vercel.app/calc/${showShareLinkModal.id}`} className="flex-1 p-2 border rounded-md bg-gray-100" /><button onClick={() => copyToClipboard(`http://cost-calculator-app.vercel.app/calc/${showShareLinkModal.id}`)} className="p-2 bg-indigo-600 text-white rounded-md"><Copy/></button></div><button onClick={() => setShowShareLinkModal(null)} className="w-full mt-4 p-2 bg-gray-200 rounded-md">Close</button></div></div>}
         {showBrandSettings && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-lg font-semibold mb-4">Brand Settings</h3><div className="space-y-4"><input type="text" placeholder="Company Name" className="w-full p-2 border rounded" value={brandSettings.companyName} onChange={e=>setBrandSettings(p=>({...p, companyName:e.target.value}))}/><div><label className="text-sm font-medium">Company Logo</label><input type="file" accept="image/*" onChange={(e) => {const file = e.target.files[0]; if(file){const r=new FileReader();r.onload=(ev)=>setBrandSettings(p=>({...p, companyLogo:ev.target.result}));r.readAsDataURL(file)}}} className="w-full mt-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/></div><div className="flex gap-4 items-center"><label>Primary Color</label><input type="color" value={brandSettings.primaryColor} onChange={e=>setBrandSettings(p=>({...p, primaryColor:e.target.value}))} className="w-10 h-10"/></div><div className="flex gap-4 items-center"><label>Secondary Color</label><input type="color" value={brandSettings.secondaryColor} onChange={e=>setBrandSettings(p=>({...p, secondaryColor:e.target.value}))} className="w-10 h-10"/></div></div><button onClick={() => setShowBrandSettings(false)} className="w-full mt-6 p-2 bg-indigo-600 text-white rounded-md">Done</button></div></div>}
 
     </div>
