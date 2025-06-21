@@ -32,11 +32,27 @@ import {
 } from 'lucide-react';
 
 // This component is for the public-facing calculator page.
-const PublicCalculatorView = ({ calculator, brandSettings }) => {
-    const [formElements, setFormElements] = useState(calculator.elements || []);
+const PublicCalculatorView = ({ calculatorData }) => {
+    const [formElements, setFormElements] = useState(calculatorData.elements || []);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalCost, setTotalCost] = useState(0);
     const jpgExportRef = useRef(null);
+    const brandSettings = calculatorData.brandSettings || {
+        primaryColor: '#6366F1',
+        companyName: 'Your Company'
+    };
+    
+    // Dynamically load html2canvas script
+    useEffect(() => {
+        const scriptId = 'html2canvas-script';
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+            script.async = true;
+            document.body.appendChild(script);
+        }
+    }, []);
 
     const handleUpdateElement = (id, key, value) => {
         const update = (elements) => {
@@ -210,6 +226,7 @@ const PublicCalculatorView = ({ calculator, brandSettings }) => {
 
     // This is a simplified renderer for the public view
     const renderPublicFormElement = (element) => {
+      // Simplified version of the main renderer
       const baseClasses = "w-full p-3 rounded-lg border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all";
       const update = (key, value) => handleUpdateElement(element.id, key, value);
       const Label = () => <label className="block text-sm font-medium text-gray-700 mb-1">{element.label}{element.required && <span className="text-red-500 ml-1">*</span>}</label>;
@@ -326,30 +343,48 @@ const CostCalculatorApp = () => {
     }
   }, []);
 
-  const [savedCalculators, setSavedCalculators] = useState([
-    {
-      id: 1,
-      name: 'Website Development Calculator',
-      description: 'Calculate costs for web development projects.',
-      elements: [
-        { id: 1625100000001, type: 'select', label: 'Type of Website', options: [{label: 'Brochure', value: 'brochure', cost: 500}, {label: 'E-commerce', value: 'e-commerce', cost: 2000}], value: 'brochure' },
-        { id: 1625100000002, type: 'number', label: 'Number of Pages', value: 5, cost: 150 },
-      ],
-      createdAt: '2025-06-21', submissions: 45, status: 'Published'
-    },
-  ]);
+  const [savedCalculators, setSavedCalculators] = useState(() => {
+    try {
+        const localData = window.localStorage.getItem('cost-calculators');
+        return localData ? JSON.parse(localData) : [
+            {
+              id: 1, name: 'Website Development Calculator', description: 'Calculate costs for web development projects.',
+              elements: [
+                { id: 1625100000001, type: 'select', label: 'Type of Website', options: [{label: 'Brochure', value: 'brochure', cost: 500}, {label: 'E-commerce', value: 'e-commerce', cost: 2000}], value: 'brochure' },
+                { id: 1625100000002, type: 'number', label: 'Number of Pages', value: 5, cost: 150 },
+              ],
+              createdAt: '2025-06-21', submissions: 45, status: 'Published'
+            },
+        ];
+    } catch (error) {
+        console.error("Could not parse saved calculators from localStorage", error);
+        return [];
+    }
+  });
+  
+  // Save to localStorage whenever calculators change
+  useEffect(() => {
+      try {
+          window.localStorage.setItem('cost-calculators', JSON.stringify(savedCalculators));
+      } catch (error) {
+          console.error("Could not save calculators to localStorage", error);
+      }
+  }, [savedCalculators]);
+
   
   // Routing logic
   useEffect(() => {
       const path = window.location.pathname;
       if (path.startsWith('/calc/')) {
           const calcId = parseInt(path.split('/calc/')[1]);
-          const calculator = savedCalculators.find(c => c.id === calcId);
+          const localData = window.localStorage.getItem('cost-calculators');
+          const calculators = localData ? JSON.parse(localData) : [];
+          const calculator = calculators.find(c => c.id === calcId);
           if (calculator) {
               setPublicCalculator(calculator);
           }
       }
-  }, [savedCalculators]);
+  }, []);
 
   const [brandSettings, setBrandSettings] = useState({
     companyLogo: null,
